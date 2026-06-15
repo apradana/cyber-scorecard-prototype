@@ -28,6 +28,7 @@ function deltaSymbol(d?: Metric['delta']) {
     </header>
 
     <div class="body">
+      <!-- Left: metric rows -->
       <div class="col">
         <h5>What moved (last 24h)</h5>
         <div
@@ -35,37 +36,67 @@ function deltaSymbol(d?: Metric['delta']) {
           class="metric"
           :class="{ changed: m.changed }"
         >
-          <div class="name">
-            {{ m.name }}
-            <span class="src">{{ m.source }}</span>
+          <div class="metric-left">
+            <div class="name">
+              {{ m.name }}
+              <span class="src">{{ m.source }}</span>
+            </div>
+            <div v-if="m.scoreImpact" class="score-impact">{{ m.scoreImpact }}</div>
           </div>
-          <div class="val" :class="m.band">
-            {{ m.value }}
-            <span v-if="m.delta" class="delta">{{ deltaSymbol(m.delta) }} {{ m.delta.amount }}</span>
+          <div class="metric-right">
+            <div class="val" :class="m.band">
+              {{ m.value }}
+              <span v-if="m.delta" class="delta">{{ deltaSymbol(m.delta) }} {{ m.delta.amount }}</span>
+            </div>
+            <a
+              v-if="m.sourceUrl"
+              :href="m.sourceUrl"
+              target="_blank"
+              rel="noopener"
+              class="source-link"
+              :aria-label="`View in ${m.source}`"
+            >↗ {{ m.source }}</a>
           </div>
         </div>
       </div>
 
+      <!-- Right: action panel (no AI branding) -->
       <div class="col">
-        <h5>Agent's take</h5>
-        <div class="agent">
-          <div class="agent-head">
-            <div class="bot" aria-hidden="true">🤖</div>
-            <div class="head-label">Daily insight · agent-verified</div>
-          </div>
+        <h5>Recommended action</h5>
+        <div class="action-panel">
           <h6>{{ agent.title }}</h6>
           <p>{{ agent.body }}</p>
           <p v-if="agent.code">
             <code>{{ agent.code }}</code>
           </p>
-          <p>
-            <strong>Recommended:</strong> {{ agent.recommendation }}
-            Projected impact: <strong class="positive">{{ agent.projectedImpact }}</strong>.
-          </p>
+
+          <!-- Action card -->
+          <div class="action-card">
+            <p class="action-text">{{ agent.action }}</p>
+            <div class="action-meta">
+              <div class="meta-row">
+                <span class="meta-label">SLA</span>
+                <span class="meta-value sla">{{ agent.sla }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Owner</span>
+                <span class="meta-value">{{ agent.owner }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Impact</span>
+                <span class="meta-value impact">{{ agent.scoreImpact }}</span>
+              </div>
+            </div>
+          </div>
+
           <div class="actions">
-            <button class="btn-primary">Open in Jira</button>
-            <button class="btn-secondary">Snooze</button>
-            <span class="feedback" aria-label="Rate this insight">👍 👎</span>
+            <a
+              class="btn-primary"
+              :href="agent.jiraUrl || '#'"
+              target="_blank"
+              rel="noopener"
+              @click.prevent="agent.jiraUrl ? undefined : void 0"
+            >Open in Jira</a>
           </div>
         </div>
       </div>
@@ -127,78 +158,122 @@ function deltaSymbol(d?: Metric['delta']) {
   font-weight: var(--fw-extra-bold);
 }
 
+/* Metric rows */
 .metric {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 11px 14px;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 10px 14px;
   background: var(--surface-inset);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-2);
+  gap: var(--space-3);
 }
 .metric.changed { box-shadow: inset 3px 0 0 var(--rag-crit); }
-.metric .name { font-size: 13px; color: var(--content-subtle); }
-.metric .name .src {
+
+.metric-left { flex: 1; min-width: 0; }
+.metric-right { flex-shrink: 0; text-align: right; }
+
+.name { font-size: 13px; color: var(--content-subtle); }
+.name .src {
   font-family: var(--font-mono); font-size: 10px;
   color: var(--content-disabled);
   margin-left: 8px; text-transform: lowercase;
 }
-.metric .val {
+
+.score-impact {
+  font-size: 11px;
+  color: var(--rag-safe);
+  font-weight: var(--fw-bold);
+  margin-top: 3px;
+}
+
+.val {
   font-size: 14px; font-weight: var(--fw-extra-bold);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
 }
-.metric .val .delta { font-size: 11px; margin-left: 6px; font-weight: var(--fw-bold); font-style: normal; }
+.val .delta { font-size: 11px; margin-left: 6px; font-weight: var(--fw-bold); }
 .val.safe { color: var(--rag-safe); }
 .val.warn { color: var(--rag-warn); }
 .val.crit { color: var(--rag-crit); }
 
-.agent {
-  background: var(--agent-bg);
-  border: 1px solid var(--agent-border);
+.source-link {
+  display: block;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--content-disabled);
+  text-decoration: none;
+  margin-top: 3px;
+}
+.source-link:hover { color: var(--content-subtle); text-decoration: underline; }
+
+/* Action panel */
+.action-panel {
+  background: var(--surface-inset);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: 16px;
 }
-.agent-head { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
-.bot {
-  width: 26px; height: 26px; border-radius: var(--radius-pill);
-  background: var(--agent-icon-bg);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px;
-}
-.head-label {
-  font-size: 11px; color: var(--agent-label-color);
-  text-transform: uppercase; letter-spacing: 1px;
-  font-weight: var(--fw-extra-bold);
-}
-h6 { margin: 0 0 var(--space-2); font-size: var(--text-sm); color: var(--content-default); font-weight: var(--fw-bold); }
-.agent p { margin: 0 0 var(--space-2); font-size: 12.5px; color: var(--content-subtle); line-height: 1.55; }
-.agent code { color: var(--color-aubergine-20); font-size: 11.5px; }
-.agent strong { color: var(--content-default); font-weight: var(--fw-bold); }
-.agent strong.positive { color: var(--rag-safe); }
 
-.actions { display: flex; gap: var(--space-2); align-items: center; margin-top: var(--space-3); }
-.btn-primary, .btn-secondary {
+h6 { margin: 0 0 var(--space-2); font-size: var(--text-sm); color: var(--content-default); font-weight: var(--fw-bold); }
+.action-panel p { margin: 0 0 var(--space-2); font-size: 12.5px; color: var(--content-subtle); line-height: 1.55; }
+.action-panel code { color: var(--color-aubergine-20); font-size: 11.5px; }
+.action-panel strong { color: var(--content-default); font-weight: var(--fw-bold); }
+
+/* Action card */
+.action-card {
+  background: rgba(0,0,0,0.18);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin: var(--space-3) 0;
+}
+
+.action-text {
+  font-size: 13px !important;
+  font-weight: var(--fw-bold) !important;
+  color: var(--content-default) !important;
+  margin-bottom: var(--space-3) !important;
+}
+
+.action-meta { display: flex; flex-direction: column; gap: 6px; }
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: 12px;
-  padding: 8px 14px;
+}
+
+.meta-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: var(--fw-extra-bold);
+  color: var(--content-disabled);
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.meta-value { color: var(--content-subtle); font-weight: var(--fw-bold); }
+.meta-value.sla { color: var(--rag-warn); }
+.meta-value.impact { color: var(--rag-safe); }
+
+.actions { margin-top: var(--space-3); }
+
+.btn-primary {
+  font-size: 12px;
+  padding: 8px 16px;
   border-radius: var(--radius-md);
   border: none;
   font-weight: var(--fw-bold);
   cursor: pointer;
   transition: background var(--t-fast) var(--ease-out);
+  background: var(--interactive-brand);
+  color: var(--interactive-brand-content);
+  text-decoration: none;
+  display: inline-block;
 }
-.btn-primary { background: var(--interactive-brand); color: var(--interactive-brand-content); }
 .btn-primary:hover { background: var(--interactive-brand-hover); }
-.btn-secondary {
-  background: transparent; color: var(--content-subtle);
-  border: 1px solid var(--border-default);
-}
-.btn-secondary:hover { border-color: var(--border-strong); color: var(--content-default); }
-
-.feedback {
-  margin-left: auto;
-  font-size: 14px;
-  color: var(--content-disabled);
-  cursor: pointer;
-}
 
 @media (max-width: 800px) {
   .body { grid-template-columns: 1fr; }

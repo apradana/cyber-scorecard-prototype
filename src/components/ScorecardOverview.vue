@@ -3,28 +3,12 @@ import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { bandFor, defaultTeam, teamStates, type Band, product } from '../data/mockData'
 import RiskRing from './RiskRing.vue'
 import PageChrome from './PageChrome.vue'
-import TopMoverBanner from './TopMoverBanner.vue'
-import ReportingDipBanner from './ReportingDipBanner.vue'
 import IndexTile from './IndexTile.vue'
-import ComparisonBlock from './ComparisonBlock.vue'
 import DrillDrawer from './DrillDrawer.vue'
+import TrendBars from './TrendBars.vue'
 
-// ─── Demo controls (so reviewers can explore) ─────────────────────
+// ─── Demo controls ──────────────────────────────────────────────────
 const selectedBand = ref<Band>('crit')
-const isDark = ref(!document.documentElement.classList.contains('light'))
-
-function toggleTheme() {
-  isDark.value = !isDark.value
-  if (isDark.value) {
-    document.documentElement.classList.remove('light')
-    localStorage.removeItem('theme')
-  } else {
-    document.documentElement.classList.add('light')
-    localStorage.setItem('theme', 'light')
-  }
-}
-const showMoverBanner = ref(true)
-const showDipBanner = ref(false)
 const selectedIndexCode = ref<string | null>(null)
 
 const team = computed(() => ({
@@ -34,7 +18,7 @@ const team = computed(() => ({
 
 const ringRef = useTemplateRef<InstanceType<typeof RiskRing>>('ringRef')
 
-// ─── Tile score animation ──────────────────────────────────────────
+// ─── Tile score animation ────────────────────────────────────────────
 const tileProgress = ref(0)
 let tileRafId: number | null = null
 
@@ -75,7 +59,7 @@ function replayRev() {
 <template>
   <div class="page">
 
-    <!-- Reviewer demo bar — clearly separated from the product itself -->
+    <!-- Reviewer demo bar -->
     <aside class="demo-bar">
       <strong>Reviewer controls</strong>
       <span class="sep"></span>
@@ -87,13 +71,11 @@ function replayRev() {
           <option value="safe">Low (24)</option>
         </select>
       </label>
-      <label><input type="checkbox" v-model="showMoverBanner" /> Top Mover</label>
-      <label><input type="checkbox" v-model="showDipBanner" /> Reporting Dip</label>
-      <button @click="replayRev" class="replay">↺ Replay rev</button>
-      <span class="hint">v0.1 · prototype · mock data</span>
+      <button @click="replayRev" class="replay">↺ Replay</button>
+      <span class="hint">v0.2 · prototype · mock data</span>
     </aside>
 
-    <!-- The product surface itself -->
+    <!-- Product surface -->
     <section class="mock" :aria-label="`${product.name} inside ${product.host}`">
       <PageChrome :team="team.name" />
 
@@ -106,62 +88,47 @@ function replayRev() {
           <span class="team-pill">Viewing <strong>{{ team.name }}</strong></span>
         </header>
 
-        <TopMoverBanner
-          v-if="showMoverBanner && !showDipBanner"
-          :index-name="team.topMover!.indexName"
-          :index-code="team.topMover!.indexCode"
-          :direction="team.topMover!.direction"
-          :amount="team.topMover!.amount"
-          :driver="team.topMover!.driver"
-          :recommendation="team.cveiDetail!.agent.recommendation"
-          :projected-impact="team.cveiDetail!.agent.projectedImpact"
-        />
-        <ReportingDipBanner v-if="showDipBanner" />
-
+        <!-- Hero: ring left, trend chart right -->
         <div class="hero">
-          <div class="ring-wrap">
+          <!-- Left: score dial + delta stats -->
+          <div class="ring-col">
             <RiskRing
               ref="ringRef"
               :score="team.overallScore!"
               :band="team.band!"
+              :size="300"
             />
-          </div>
 
-          <div class="meta-col">
-            <div class="info-icon" tabindex="0" aria-label="What this measures">
-              ⓘ what this measures
-            </div>
-
-            <div class="change-block">
-              <div class="item">
-                <div class="lbl">Since yesterday</div>
-                <div :class="['val', team.deltaDay!.dir === 'up' ? 'crit' : team.deltaDay!.dir === 'down' ? 'safe' : '']">
+            <div class="delta-stats">
+              <div class="stat">
+                <div class="stat-lbl">Since yesterday</div>
+                <div :class="['stat-val', team.deltaDay!.dir === 'up' ? 'crit' : team.deltaDay!.dir === 'down' ? 'safe' : '']">
                   <template v-if="team.deltaDay!.dir === 'up'">▲ +{{ team.deltaDay!.amount }} pts</template>
                   <template v-else-if="team.deltaDay!.dir === 'down'">▼ −{{ team.deltaDay!.amount }} pts</template>
                   <template v-else>— flat</template>
                 </div>
-                <div class="sub">{{ team.deltaDay!.note }}</div>
+                <div class="stat-sub">{{ team.deltaDay!.note }}</div>
               </div>
 
-              <div class="item">
-                <div class="lbl">Since baseline · {{ product.baselineDate }}</div>
-                <div :class="['val', team.deltaBaseline!.dir === 'up' ? 'warn' : team.deltaBaseline!.dir === 'down' ? 'safe' : '']">
+              <div class="stat">
+                <div class="stat-lbl">Since baseline · {{ product.baselineDate }}</div>
+                <div :class="['stat-val', team.deltaBaseline!.dir === 'up' ? 'warn' : team.deltaBaseline!.dir === 'down' ? 'safe' : '']">
                   <template v-if="team.deltaBaseline!.dir === 'up'">▲ +{{ team.deltaBaseline!.amount }} pts</template>
                   <template v-else-if="team.deltaBaseline!.dir === 'down'">▼ −{{ team.deltaBaseline!.amount }} pts</template>
                   <template v-else>— flat</template>
                 </div>
-                <div class="sub">over {{ team.deltaBaseline!.daysSince }} days</div>
+                <div class="stat-sub">over {{ team.deltaBaseline!.daysSince }} days</div>
               </div>
             </div>
+          </div>
 
-            <ComparisonBlock
-              :you="team.comparison!.you"
-              :org-average="team.comparison!.orgAverage"
-              :top-quartile="team.comparison!.topQuartile"
-            />
+          <!-- Right: bar chart -->
+          <div class="chart-col">
+            <TrendBars :data="team.trendData!" />
           </div>
         </div>
 
+        <!-- Index tiles -->
         <div class="indices">
           <IndexTile
             v-for="card in team.indices"
@@ -173,6 +140,7 @@ function replayRev() {
           />
         </div>
 
+        <!-- Drill drawer -->
         <DrillDrawer
           v-if="selectedIndexCode === 'CVEI'"
           :index-code="'CVEI'"
@@ -191,15 +159,17 @@ function replayRev() {
           :band="bandFor(41)"
           :metrics="[
             { name: 'Awareness Training Latency', source: 'wiz', value: '89%', band: 'warn' },
-            { name: 'Secure Coding Training Completion', source: 'jira', value: '35.5%', band: 'crit' },
+            { name: 'Secure Coding Training Completion', source: 'jira', value: '35.5%', band: 'crit', scoreImpact: '−6 pts if 100%' },
             { name: 'Phishing Reporting Rate', source: 'jira', value: '18.2%', band: 'warn' },
             { name: 'Phishing Susceptibility', source: 'jira', value: '6.2%', band: 'safe' },
           ]"
           :agent="{
-            title: 'Why HREI is stable',
+            title: 'HREI is stable',
             body: 'No significant movement in human-side signals in the last 24h. Phishing susceptibility down 0.4% week-on-week.',
-            recommendation: 'No action required this cycle. Next training nudge: 2 weeks.',
-            projectedImpact: 'No change expected',
+            action: 'Complete secure coding training for the 35% still outstanding.',
+            sla: 'Due 30 Jun · 15 days',
+            owner: 'Engineering Leads',
+            scoreImpact: 'HREI −6 if all complete',
           }"
           @close="closeDrawer"
         />
@@ -210,15 +180,17 @@ function replayRev() {
           :index-score="97"
           :band="bandFor(97)"
           :metrics="[
-            { name: 'Unmitigated Third Party Risks', source: 'jira', value: '26', band: 'crit', changed: true, delta: { dir: 'down', amount: '−2' } },
+            { name: 'Unmitigated Third Party Risks', source: 'jira', value: '26', band: 'crit', changed: true, delta: { dir: 'down', amount: '−2' }, scoreImpact: '−12 pts if <5' },
             { name: 'Open Third Party TRFs (Critical)', source: 'jira', value: '4', band: 'crit' },
             { name: 'High-severity TRFs', source: 'jira', value: '11', band: 'warn' },
           ]"
           :agent="{
             title: 'Two TRFs closed overnight',
-            body: 'TRF-218 and TRF-741 moved to Remediation Complete. Score continues to be heavily dominated by long-standing third-party risk.',
-            recommendation: 'Push for closure on the top 5 oldest TRFs in the next sprint.',
-            projectedImpact: 'SCREI −12 if all 5 close',
+            body: 'TRF-218 and TRF-741 moved to Remediation Complete. Score continues to be dominated by long-standing third-party risk.',
+            action: 'Push for closure on the top 5 oldest TRFs in the next sprint.',
+            sla: 'Next sprint · 8 days',
+            owner: 'Supply Chain Security',
+            scoreImpact: 'SCREI −12 if all 5 close',
           }"
           @close="closeDrawer"
         />
@@ -226,8 +198,7 @@ function replayRev() {
     </section>
 
     <p class="footnote">
-      <strong>Cyber Scorecard prototype · v0.1</strong> · all data is mock ·
-      decisions captured: no absolute target ticks · per-user dismissible dip · aggregates-only comparisons.
+      <strong>Cyber Scorecard prototype · v0.2</strong> · all data is mock
     </p>
   </div>
 </template>
@@ -262,7 +233,6 @@ function replayRev() {
   font-weight: var(--fw-bold);
   cursor: pointer;
 }
-.demo-bar input[type="checkbox"] { accent-color: var(--interactive-brand); }
 .demo-bar select {
   background: var(--surface-raised);
   color: var(--content-default);
@@ -273,27 +243,18 @@ function replayRev() {
   font-size: 12.5px;
   font-weight: var(--fw-bold);
 }
-.demo-bar .replay,
-.demo-bar .theme-toggle {
+.demo-bar .replay {
   border: none;
   padding: 6px 14px;
   border-radius: var(--radius-md);
   font-weight: var(--fw-bold);
   font-size: var(--text-xs);
   cursor: pointer;
-  transition: background var(--t-fast) var(--ease-out);
-}
-.demo-bar .replay {
   background: var(--interactive-brand);
   color: var(--interactive-brand-content);
+  transition: background var(--t-fast) var(--ease-out);
 }
 .demo-bar .replay:hover { background: var(--interactive-brand-hover); }
-.demo-bar .theme-toggle {
-  background: var(--surface-raised);
-  color: var(--content-subtle);
-  border: 1px solid var(--border-default);
-}
-.demo-bar .theme-toggle:hover { color: var(--content-default); border-color: var(--border-strong); }
 .demo-bar .hint { margin-left: auto; font-style: italic; opacity: 0.7; font-size: 11.5px; }
 
 /* ─── Product mock surface ─── */
@@ -338,50 +299,64 @@ function replayRev() {
   background: linear-gradient(170deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding: var(--space-8) var(--space-8);
+  padding: var(--space-8);
   margin-bottom: var(--space-5);
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 300px 1fr;
   gap: var(--space-8);
-  align-items: center;
-  position: relative;
-}
-.ring-wrap { display: flex; justify-content: center; }
-.meta-col { padding: var(--space-1); position: relative; }
-.info-icon {
-  position: absolute; top: -8px; right: 0;
-  font-size: 11.5px;
-  color: var(--content-disabled);
-  padding: 5px 10px;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-pill);
-  background: rgba(0,0,0,0.20);
-  font-weight: var(--fw-bold);
-  cursor: default;
+  align-items: stretch;
 }
 
-.change-block { display: flex; gap: var(--space-8); margin-bottom: var(--space-5); margin-top: var(--space-3); }
-.change-block .item .lbl {
-  font-size: 11px;
+/* ─── Left column: ring + delta stats ─── */
+.ring-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.delta-stats {
+  display: flex;
+  gap: var(--space-6);
+  width: 100%;
+  padding: var(--space-4) var(--space-2);
+  background: rgba(0,0,0,0.18);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.stat { flex: 1; }
+
+.stat-lbl {
+  font-size: 10.5px;
   color: var(--content-disabled);
   text-transform: uppercase;
   letter-spacing: 1px;
   font-weight: var(--fw-bold);
   margin-bottom: var(--space-1);
 }
-.change-block .item .val {
+
+.stat-val {
   font-size: var(--text-md);
   color: var(--content-default);
   font-weight: var(--fw-extra-bold);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
+  line-height: 1.2;
 }
-.change-block .item .val.crit { color: var(--rag-crit); }
-.change-block .item .val.warn { color: var(--rag-warn); }
-.change-block .item .val.safe { color: var(--rag-safe); }
-.change-block .item .sub { font-size: 11.5px; color: var(--content-disabled); margin-top: 4px; }
+.stat-val.crit { color: var(--rag-crit); }
+.stat-val.warn { color: var(--rag-warn); }
+.stat-val.safe { color: var(--rag-safe); }
+.stat-sub { font-size: 11px; color: var(--content-disabled); margin-top: 3px; }
 
-/* ─── Index row ─── */
+/* ─── Right column: bar chart ─── */
+.chart-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+
+/* ─── Index tiles ─── */
 .indices {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -399,21 +374,23 @@ function replayRev() {
 .footnote strong { color: var(--content-subtle); font-weight: var(--fw-bold); }
 
 /* ─── Responsive ─── */
-@media (max-width: 900px) {
+@media (max-width: 960px) {
   .hero {
     grid-template-columns: 1fr;
     gap: var(--space-5);
     padding: var(--space-5);
   }
-  .ring-wrap { justify-content: center; }
-  .indices { grid-template-columns: 1fr; }
+  .ring-col { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .delta-stats { flex: 1; min-width: 200px; }
+  .indices { grid-template-columns: 1fr 1fr; }
   .surface { padding: var(--space-5); }
-  .info-icon { position: static; display: inline-block; margin-bottom: var(--space-3); }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .page { padding: var(--space-3); }
   .head { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
-  .change-block { flex-direction: column; gap: var(--space-3); }
+  .delta-stats { flex-direction: column; gap: var(--space-3); }
+  .indices { grid-template-columns: 1fr; }
+  .ring-col { flex-direction: column; }
 }
 </style>

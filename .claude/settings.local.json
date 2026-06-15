@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/aditya.pradana/**)",
+      "Bash(command -v brew)",
+      "Bash(brew --prefix)",
+      "WebFetch(domain:pie.design)",
+      "Bash(gh auth *)"
+    ]
+  }
+}

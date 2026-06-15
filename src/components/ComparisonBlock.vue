@@ -1,23 +1,45 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { bandFor, type Band } from '../data/mockData'
 
 const props = defineProps<{
   you: number
   orgAverage: number
   topQuartile: number
+  internalPeerAverage: number
+  internalPeerTop: number
 }>()
+
+type Scope = 'all' | 'internal'
+const scope = ref<Scope>('all')
 
 const yourBand = computed<Band>(() => bandFor(props.you))
 const yourColor = computed(() => {
   const b = yourBand.value
   return b === 'safe' ? 'var(--rag-safe)' : b === 'warn' ? 'var(--rag-warn)' : 'var(--rag-crit)'
 })
+
+const peerAverage = computed(() => scope.value === 'all' ? props.orgAverage : props.internalPeerAverage)
+const peerTop = computed(() => scope.value === 'all' ? props.topQuartile : props.internalPeerTop)
+const peerLabel = computed(() => scope.value === 'all' ? 'P&T average' : 'Internal average')
+const topLabel = computed(() => scope.value === 'all' ? 'Top quartile' : 'Internal top')
 </script>
 
 <template>
   <div class="block">
-    <div class="lbl">How your team sits in P&amp;T</div>
+    <div class="block-head">
+      <div class="lbl">How your team sits</div>
+      <div class="scope-toggle" role="group" aria-label="Comparison scope">
+        <button
+          :class="['scope-btn', { active: scope === 'all' }]"
+          @click="scope = 'all'"
+        >All P&amp;T</button>
+        <button
+          :class="['scope-btn', { active: scope === 'internal' }]"
+          @click="scope = 'internal'"
+        >Internal teams</button>
+      </div>
+    </div>
 
     <div class="row">
       <div class="who"><strong>Your team</strong></div>
@@ -25,14 +47,14 @@ const yourColor = computed(() => {
       <div class="num">{{ you }}</div>
     </div>
     <div class="row">
-      <div class="who">P&amp;T average</div>
-      <div class="bar"><div class="fill avg" :style="{ width: orgAverage + '%' }" /></div>
-      <div class="num">{{ orgAverage }}</div>
+      <div class="who">{{ peerLabel }}</div>
+      <div class="bar"><div class="fill avg" :style="{ width: peerAverage + '%' }" /></div>
+      <div class="num">{{ peerAverage }}</div>
     </div>
     <div class="row">
-      <div class="who">Top quartile</div>
-      <div class="bar"><div class="fill safe" :style="{ width: topQuartile + '%' }" /></div>
-      <div class="num">{{ topQuartile }}</div>
+      <div class="who">{{ topLabel }}</div>
+      <div class="bar"><div class="fill safe" :style="{ width: peerTop + '%' }" /></div>
+      <div class="num">{{ peerTop }}</div>
     </div>
 
     <div class="caption">
@@ -48,12 +70,50 @@ const yourColor = computed(() => {
   border-radius: var(--radius-md);
   border: 1px solid var(--border-default);
 }
+
+.block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
 .lbl {
   font-size: 11px; color: var(--content-disabled);
   text-transform: uppercase; letter-spacing: 1px;
   font-weight: var(--fw-bold);
-  margin-bottom: var(--space-3);
 }
+
+.scope-toggle {
+  display: flex;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.scope-btn {
+  font-size: 10.5px;
+  font-weight: var(--fw-bold);
+  color: var(--content-disabled);
+  background: transparent;
+  border: none;
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+  white-space: nowrap;
+}
+
+.scope-btn:hover { color: var(--content-subtle); }
+
+.scope-btn.active {
+  background: var(--surface-raised);
+  color: var(--content-default);
+}
+
 .row {
   display: flex; align-items: center; gap: var(--space-3);
   margin-bottom: var(--space-2);

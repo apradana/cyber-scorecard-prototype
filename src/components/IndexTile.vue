@@ -42,6 +42,9 @@ defineEmits<{ (e: 'select', code: string): void }>()
         </div>
         <div class="note">{{ card.note }}</div>
       </div>
+      <div v-if="card.topAction" class="top-action">
+        <span class="action-icon">→</span> {{ card.topAction }}
+      </div>
     </div>
   </button>
 </template>
@@ -146,4 +149,18 @@ defineEmits<{ (e: 'select', code: string): void }>()
 .delta .up   { color: var(--rag-crit); font-weight: var(--fw-extra-bold); }
 .delta .down { color: var(--rag-safe); font-weight: var(--fw-extra-bold); }
 .delta .flat { color: var(--content-disabled); font-weight: var(--fw-extra-bold); }
+
+.top-action {
+  margin-top: var(--space-2);
+  font-size: 11px;
+  color: var(--rag-safe);
+  font-weight: var(--fw-bold);
+  line-height: 1.4;
+  padding: 6px 0 0;
+  border-top: 1px dashed rgba(255,255,255,0.07);
+}
+.action-icon {
+  opacity: 0.7;
+  font-style: normal;
+}
 </style>
