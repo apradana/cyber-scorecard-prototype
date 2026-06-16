@@ -108,7 +108,11 @@ function replayRev() {
             </select>
             <span class="title-suffix">Cyber Scorecard</span>
           </div>
-          <span class="meta">· {{ product.refreshCadence }} refresh · last updated {{ product.lastUpdated }}</span>
+          <div class="meta-row">
+            <span class="meta-item">Daily refresh</span>
+            <span class="meta-sep">·</span>
+            <span class="meta-item">Last update {{ product.lastUpdated }}</span>
+          </div>
         </header>
 
         <!-- Hero: ring left, trend chart right -->
@@ -276,11 +280,16 @@ function replayRev() {
   background: linear-gradient(180deg, var(--surface-subtle) 0%, var(--surface-default) 100%);
   box-shadow: var(--shadow-high);
 }
-.surface { padding: var(--space-8) var(--space-8) var(--space-10); }
+.surface { padding: var(--space-9) var(--space-9) var(--space-12); }
 
 /* ─── Header ─── */
 .head {
-  margin-bottom: var(--space-5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  flex-wrap: wrap;
 }
 
 .title-row {
@@ -291,7 +300,7 @@ function replayRev() {
 }
 
 .team-select {
-  font-size: var(--text-md);
+  font-size: 22px;
   font-weight: var(--fw-extra-bold);
   font-family: inherit;
   color: var(--content-default);
@@ -300,9 +309,8 @@ function replayRev() {
   border-bottom: 1.5px solid var(--border-default);
   padding: 0 4px 2px 0;
   cursor: pointer;
-  letter-spacing: 0.1px;
+  letter-spacing: -0.2px;
   outline: none;
-  /* style the dropdown arrow */
   appearance: auto;
   -webkit-appearance: auto;
 }
@@ -310,18 +318,31 @@ function replayRev() {
 .team-select:focus { border-bottom-color: var(--interactive-brand); }
 
 .title-suffix {
-  font-size: var(--text-md);
+  font-size: 22px;
   font-weight: var(--fw-extra-bold);
   color: var(--content-subtle);
-  letter-spacing: 0.1px;
+  letter-spacing: -0.2px;
 }
 
-.meta {
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-bottom: 3px;   /* align with title baseline */
+  flex-shrink: 0;
+}
+
+.meta-item {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: 11.5px;
   color: var(--content-disabled);
-  margin-top: 4px;
-  display: block;
+  font-weight: var(--fw-bold);
+}
+
+.meta-sep {
+  color: var(--content-disabled);
+  opacity: 0.4;
+  font-size: 11px;
 }
 
 /* ─── Hero ─── */
@@ -329,11 +350,11 @@ function replayRev() {
   background: linear-gradient(170deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding: var(--space-6) var(--space-7);
+  padding: var(--space-8);
   margin-bottom: var(--space-6);
   display: grid;
   grid-template-columns: 280px 1fr;
-  gap: var(--space-7);
+  gap: var(--space-8);
   align-items: stretch;
 }
 
@@ -342,7 +363,7 @@ function replayRev() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
+  gap: 8px;
 }
 
 .ring-wrap { flex-shrink: 0; }
@@ -401,15 +422,15 @@ function replayRev() {
 }
 
 .breakdown-sub {
-  font-size: 12px;
-  color: var(--content-disabled);
+  font-size: 13.5px;
+  color: var(--content-subtle);
 }
 
 /* ─── Index tiles ─── */
 .indices {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-7);
+  gap: 36px;
 }
 
 /* ─── Footnote ─── */

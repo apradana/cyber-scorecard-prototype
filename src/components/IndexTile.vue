@@ -128,7 +128,7 @@ defineEmits<{ (e: 'select', code: string): void }>()
 .max { font-size: var(--text-sm); color: var(--content-disabled); padding-bottom: 7px; font-weight: var(--fw-bold); }
 
 .descriptor {
-  font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase;
+  font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase;
   font-weight: var(--fw-extra-bold);
   margin-top: var(--space-2);
 }

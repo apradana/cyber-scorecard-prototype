@@ -249,11 +249,11 @@ watch(() => props.score, (next) => {
   color: var(--content-disabled);
   text-transform: uppercase;
   font-weight: var(--fw-bold);
-  margin-bottom: 2px;
+  margin-bottom: 6px;
 }
 .score-num {
-  font-size: 86px;
-  line-height: 0.9;
+  font-size: 80px;
+  line-height: 1;
   letter-spacing: -3px;
   color: var(--content-default);
   font-weight: var(--fw-black);
@@ -266,7 +266,7 @@ watch(() => props.score, (next) => {
 .score-num.warn { color: var(--rag-warn); }
 .score-num.crit { color: var(--rag-crit); }
 .descriptor {
-  margin-top: 6px;
+  margin-top: 10px;
   font-size: 11px;
   letter-spacing: 2px;
   font-weight: var(--fw-extra-bold);

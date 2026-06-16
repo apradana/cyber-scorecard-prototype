@@ -32,10 +32,10 @@ function scoreToY(s: number): number {
 const REF_40_Y = computed(() => scoreToY(40))
 const REF_70_Y = computed(() => scoreToY(70))
 
-// ─── Bar geometry — skinny with wide gaps ──────────────────────────
+// ─── Bar geometry — gap = 1/3 of bar width (barW = 0.75 × slot) ────
 const n = computed(() => scores.value.length)
 const slotW = computed(() => CW / n.value)
-const barW = computed(() => slotW.value * 0.45)   // bar takes 45% of slot, gap 55%
+const barW = computed(() => slotW.value * 0.75)
 
 interface Bar {
   x: number; y: number; h: number
@@ -53,10 +53,25 @@ const bars = computed<Bar[]>(() =>
       x: PAD_L + i * slotW.value + (slotW.value - barW.value) / 2,
       y: PAD_T + CH - h,
       h, score, isLatest, color,
-      opacity: isLatest ? 1 : 0.6,
+      opacity: isLatest ? 1 : 0.62,
     }
   })
 )
+
+// Top-rounded-only bar path
+function barPath(bx: number, by: number, bw: number, bh: number): string {
+  const r = Math.min(3, bh / 2)
+  if (r < 0.5) return `M ${bx},${by} h ${bw} v ${bh} h ${-bw} Z`
+  return [
+    `M ${bx},${by + bh}`,
+    `L ${bx},${by + r}`,
+    `Q ${bx},${by} ${bx + r},${by}`,
+    `L ${bx + bw - r},${by}`,
+    `Q ${bx + bw},${by} ${bx + bw},${by + r}`,
+    `L ${bx + bw},${by + bh}`,
+    `Z`,
+  ].join(' ')
+}
 
 const latest = computed(() => bars.value[bars.value.length - 1])
 
@@ -145,18 +160,15 @@ const yLabels = [
             :x="PAD_L - 5" :y="scoreToY(yl.score) + 4"
             class="axis-label" text-anchor="end">{{ yl.label }}</text>
 
-      <!-- Bars -->
+      <!-- Bars (top corners rounded only) -->
       <g v-for="(bar, i) in bars" :key="i">
-        <rect
-          :x="bar.x" :y="bar.y"
-          :width="barW" :height="bar.h"
+        <path
+          :d="barPath(bar.x, bar.y, barW, bar.h)"
           :fill="bar.color" :opacity="bar.opacity"
-          rx="2"
         />
-        <rect v-if="bar.isLatest"
-          :x="bar.x" :y="bar.y"
-          :width="barW" height="2"
-          fill="white" opacity="0.7" rx="1"
+        <path v-if="bar.isLatest"
+          :d="barPath(bar.x, bar.y, barW, 2)"
+          fill="white" opacity="0.75"
         />
       </g>
 
@@ -197,7 +209,7 @@ const yLabels = [
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-3);
+  margin-bottom: 6px;
   flex-shrink: 0;
 }
 
