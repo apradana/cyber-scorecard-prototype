@@ -18,8 +18,8 @@ const W = 520
 const H = 220
 const PAD_L = 34
 const PAD_R = 10
-const PAD_T = 20
-const PAD_B = 32
+const PAD_T = 5
+const PAD_B = 30
 
 const CW = W - PAD_L - PAD_R
 const CH = H - PAD_T - PAD_B
@@ -34,7 +34,7 @@ const REF_70_Y = computed(() => scoreToY(70))
 // ─── Bar geometry — gap = 1/4 of slot (barW = 75%) ─────────────────
 const n = computed(() => scores.value.length)
 const slotW = computed(() => CW / n.value)
-const barW = computed(() => slotW.value * 0.75)
+const barW = computed(() => slotW.value * 0.45)
 
 interface Bar {
   x: number; y: number; h: number
@@ -42,10 +42,24 @@ interface Bar {
   color: string; opacity: number
 }
 
-// Top-rounded-only bar path
+// Bar path: fully rounded top; if bar is shorter than wide, full pill shape
 function barPath(bx: number, by: number, bw: number, bh: number): string {
-  const r = Math.min(3, bh / 2, bw / 3)
-  if (r < 0.5) return `M ${bx},${by + bh} L ${bx},${by} L ${bx + bw},${by} L ${bx + bw},${by + bh} Z`
+  const r = bw / 2
+  if (bh <= bw) {
+    // Full pill — rounded on all sides
+    const rb = Math.min(r, bh / 2)
+    return [
+      `M ${bx},${by + bh - rb}`,
+      `Q ${bx},${by + bh} ${bx + rb},${by + bh}`,
+      `L ${bx + bw - rb},${by + bh}`,
+      `Q ${bx + bw},${by + bh} ${bx + bw},${by + bh - rb}`,
+      `L ${bx + bw},${by + rb}`,
+      `Q ${bx + bw},${by} ${bx + bw - rb},${by}`,
+      `L ${bx + rb},${by}`,
+      `Q ${bx},${by} ${bx},${by + rb}`,
+      `Z`,
+    ].join(' ')
+  }
   return [
     `M ${bx},${by + bh}`,
     `L ${bx},${by + r}`,
@@ -67,7 +81,7 @@ const bars = computed<Bar[]>(() =>
       x: PAD_L + i * slotW.value + (slotW.value - barW.value) / 2,
       y: PAD_T + CH - h,
       h, score, isLatest, color,
-      opacity: isLatest ? 1 : 0.65,
+      opacity: isLatest ? 1 : 0.4,
     }
   })
 )
@@ -175,29 +189,13 @@ const dateTicks = computed<DateTick[]>(() => {
           :fill="bar.color"
           :opacity="bar.opacity"
         />
-        <!-- Latest bar: thin white highlight stripe at top -->
+        <!-- Today's bar: bright white overlay to lift the colour -->
         <path
           v-if="bar.isLatest"
-          :d="barPath(bar.x, bar.y, barW, Math.min(2, bar.h))"
+          :d="barPath(bar.x, bar.y, barW, bar.h)"
           fill="white"
-          opacity="0.75"
+          opacity="0.18"
         />
-      </g>
-
-      <!-- Latest bar score callout -->
-      <g v-if="latest">
-        <rect
-          :x="latest.x + barW / 2 - 20"
-          :y="latest.y - 24"
-          width="40" height="18" rx="4"
-          :fill="latest.color" opacity="0.92"
-        />
-        <text
-          :x="latest.x + barW / 2"
-          :y="latest.y - 11"
-          class="callout-text"
-          text-anchor="middle"
-        >{{ latest.score }}</text>
       </g>
 
       <!-- Date ticks on x-axis -->
@@ -210,7 +208,7 @@ const dateTicks = computed<DateTick[]>(() => {
           opacity="0.4"
         />
         <text
-          :x="tick.x" :y="H - 4"
+          :x="tick.x" :y="H - 5"
           class="axis-label"
           text-anchor="middle"
         >{{ tick.label }}</text>
@@ -230,14 +228,14 @@ const dateTicks = computed<DateTick[]>(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 4px;
-  margin-top: 10px;
+  margin-bottom: 33px;
+  margin-top: 16px;
   padding-left: calc(34 / 520 * 100%);
   flex-shrink: 0;
 }
 
 .bars-label {
-  font-size: 16px;
+  font-size: 20px;
   color: var(--content-subtle);
   font-weight: var(--fw-extra-bold);
   letter-spacing: 0.1px;

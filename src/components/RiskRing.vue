@@ -4,6 +4,8 @@ import {
   arcEndpoints,
   arcPathBetween,
   radialTickEndpoints,
+  polarToXY,
+  scoreToSvgAngle,
   type GaugeGeometry,
 } from '../composables/useGaugeMath'
 import { type Band, bandLabel } from '../data/mockData'
@@ -30,14 +32,22 @@ const GEOM: GaugeGeometry = {
 const markerOuter = GEOM.radius + GEOM.strokeW / 2           // 141 — outer edge, flush
 const markerInner = GEOM.radius - GEOM.strokeW / 2 - 12      // 107 — 12 px past inner edge (60% of 20)
 
-// Glow stroke width sized so its inner edge aligns with the needle tip (r=107).
-const glowStrokeW = 2 * (GEOM.radius - markerInner)          //  46
+// Glow stroke width: wider than ring for inner bloom, less bleed than original 46.
+const glowStrokeW = 42
 
 // Gap between colour segments (~2 px visual separation at the band boundaries).
-const GAP = 0.16
+const GAP = 0.25
+
+// Band boundary labels — positioned just outside the ring at score=40 and score=70
+const label40 = polarToXY(GEOM.cx, GEOM.cy, scoreToSvgAngle(40), GEOM.radius + GEOM.strokeW / 2 + 13)
+const label70 = polarToXY(GEOM.cx, GEOM.cy, scoreToSvgAngle(70), GEOM.radius + GEOM.strokeW / 2 + 19)
 
 const { start, end } = arcEndpoints(GEOM)
-const trackPath = `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${GEOM.radius} ${GEOM.radius} 0 1 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`
+
+// Track split into three segments matching the RAG gaps — gaps always visible.
+const trackSafePath = arcPathBetween(GEOM, 0,         40 - GAP)
+const trackWarnPath = arcPathBetween(GEOM, 40 + GAP,  70 - GAP)
+const trackCritPath = arcPathBetween(GEOM, 70 + GAP,  100)
 
 // RAG segments with a ~2 px gap at each band boundary.
 const safeArcPath = arcPathBetween(GEOM, 0,         40 - GAP)
@@ -157,15 +167,14 @@ watch(() => props.score, (next) => {
         </filter>
       </defs>
 
-      <!-- Inactive track (full 270° arc, flat ends) -->
-      <path
-        :d="trackPath"
-        stroke="var(--color-truffle-80)"
-        :stroke-width="GEOM.strokeW"
-        fill="none"
-        stroke-linecap="butt"
-        opacity="0.55"
-      />
+      <!-- Inactive track — grouped so opacity applies once to the composite -->
+      <g opacity="0.55" fill="var(--color-truffle-80)">
+        <path :d="trackSafePath" stroke="var(--color-truffle-80)" :stroke-width="GEOM.strokeW" fill="none" stroke-linecap="butt" />
+        <path :d="trackWarnPath" stroke="var(--color-truffle-80)" :stroke-width="GEOM.strokeW" fill="none" stroke-linecap="butt" />
+        <path :d="trackCritPath" stroke="var(--color-truffle-80)" :stroke-width="GEOM.strokeW" fill="none" stroke-linecap="butt" />
+        <circle :cx="start.x" :cy="start.y" :r="GEOM.strokeW / 2" />
+        <circle :cx="end.x"   :cy="end.y"   :r="GEOM.strokeW / 2" />
+      </g>
 
       <!-- Inner glow layer: inner edge aligns with needle tip, clipped to inner side -->
       <g mask="url(#ring-glow-mask)" opacity="0.32">
@@ -183,6 +192,13 @@ watch(() => props.score, (next) => {
         fill="none"
         stroke-linecap="butt"
         :stroke-dasharray="safeDash"
+      />
+      <!-- Rounded cap only at the start of the safe arc (score=0) -->
+      <circle
+        v-if="displayScore > 0"
+        :cx="start.x" :cy="start.y"
+        :r="GEOM.strokeW / 2"
+        fill="var(--rag-safe)"
       />
       <path
         ref="warnArcRef"
@@ -202,6 +218,10 @@ watch(() => props.score, (next) => {
         stroke-linecap="butt"
         :stroke-dasharray="critDash"
       />
+
+      <!-- Band boundary labels at gaps -->
+      <text :x="label40.x" :y="label40.y" class="band-label" text-anchor="middle" dominant-baseline="middle">40</text>
+      <text :x="label70.x" :y="label70.y" class="band-label" text-anchor="middle" dominant-baseline="middle">70</text>
 
       <!-- Score needle: flush with outer ring edge, 20 px past inner edge -->
       <line
@@ -240,7 +260,7 @@ watch(() => props.score, (next) => {
   justify-content: center;
   pointer-events: none;
   text-align: center;
-  transform: translateY(8px);
+  transform: translateY(-4px);
 }
 .score-num {
   font-size: 80px;
@@ -266,4 +286,11 @@ watch(() => props.score, (next) => {
 .descriptor.safe { color: var(--rag-safe); }
 .descriptor.warn { color: var(--rag-warn); }
 .descriptor.crit { color: var(--rag-crit); }
+
+.band-label {
+  font-size: 16px;
+  font-family: var(--font-mono);
+  font-weight: var(--fw-bold);
+  fill: var(--border-default);
+}
 </style>

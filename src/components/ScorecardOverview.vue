@@ -179,8 +179,8 @@ function replayRev() {
           v-if="selectedIndexCode === 'CVEI'"
           :index-code="'CVEI'"
           :index-name="'Composite Vulnerability'"
-          :index-score="78"
-          :band="bandFor(78)"
+          :index-score="81"
+          :band="bandFor(81)"
           :metrics="team.cveiDetail!.metrics"
           :agent="team.cveiDetail!.agent"
           @close="closeDrawer"
@@ -345,7 +345,7 @@ function replayRev() {
   background: linear-gradient(170deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding: var(--space-8);
+  padding: var(--space-3) var(--space-8) calc(var(--space-4) + 20px);
   margin-bottom: var(--space-6);
   display: grid;
   grid-template-columns: 280px 1fr;
@@ -358,14 +358,12 @@ function replayRev() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  /* padding-top matches bars-head margin-top so dial + heading push down together;
-     padding-bottom lifts delta-stats bottom to align with chart x-axis date labels */
-  padding-top: 10px;
-  padding-bottom: 30px;
+  gap: 4px;
+  padding-top: 24px;
+  padding-bottom: 44px;
 }
 
-.ring-wrap { flex-shrink: 0; }
+.ring-wrap { flex-shrink: 0; position: relative; z-index: 1; max-height: 236px; overflow: hidden; }
 
 .delta-stats {
   margin-top: auto;
@@ -401,6 +399,7 @@ function replayRev() {
 .chart-col {
   display: flex;
   flex-direction: column;
+  padding-top: 36px;
 }
 
 /* ─── Score breakdown ─── */

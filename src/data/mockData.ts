@@ -139,7 +139,7 @@ export const defaultTeam: Team = {
     {
       code: 'CVEI',
       name: 'Composite Vulnerability',
-      score: 78,
+      score: 81,
       band: 'crit',
       delta: { dir: 'up', amount: 6 },
       note: '1 metric moved',
@@ -226,7 +226,7 @@ export const teamStates: Record<Band, Partial<Team>> = {
     comparison: { you: 78, orgAverage: 64, topQuartile: 41 },
     internalComparison: { peerAverage: 83, peerTop: 67 },
     indices: [
-      { code: 'CVEI', name: 'Composite Vulnerability', score: 78, band: 'crit', delta: { dir: 'up', amount: 6 }, note: '1 metric moved', topAction: 'Patch base image → save ~4 pts' },
+      { code: 'CVEI', name: 'Composite Vulnerability', score: 81, band: 'crit', delta: { dir: 'up', amount: 6 }, note: '1 metric moved', topAction: 'Patch base image → save ~4 pts' },
       { code: 'HREI', name: 'Human Risk',              score: 41, band: 'warn', delta: { dir: 'flat', amount: 0 }, note: 'stable', topAction: 'Complete secure coding training → −6 pts' },
       { code: 'SCREI', name: 'Supply Chain',           score: 97, band: 'crit', delta: { dir: 'down', amount: 1 }, note: '2 TRFs closed', topAction: 'Close top 5 TRFs → save ~12 pts' },
     ],
@@ -240,7 +240,7 @@ export const teamStates: Record<Band, Partial<Team>> = {
     comparison: { you: 56, orgAverage: 64, topQuartile: 41 },
     internalComparison: { peerAverage: 61, peerTop: 44 },
     indices: [
-      { code: 'CVEI', name: 'Composite Vulnerability', score: 56, band: 'warn', delta: { dir: 'down', amount: 4 }, note: '4 findings resolved', topAction: 'Rotate stale access keys → −3 pts' },
+      { code: 'CVEI', name: 'Composite Vulnerability', score: 59, band: 'warn', delta: { dir: 'down', amount: 4 }, note: '4 findings resolved', topAction: 'Rotate stale access keys → −3 pts' },
       { code: 'HREI', name: 'Human Risk',              score: 32, band: 'safe', delta: { dir: 'down', amount: 6 }, note: 'training complete', topAction: 'Nudge remaining 11% to complete' },
       { code: 'SCREI', name: 'Supply Chain',           score: 67, band: 'warn', delta: { dir: 'down', amount: 3 }, note: '3 TRFs closed', topAction: 'Close 2 critical TRFs → −6 pts' },
     ],
