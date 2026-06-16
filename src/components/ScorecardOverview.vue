@@ -9,7 +9,7 @@ import TrendBars from './TrendBars.vue'
 // ─── Teams (demo) ────────────────────────────────────────────────────
 const TEAMS: { name: string; band: Band }[] = [
   { name: 'Workplace Technology', band: 'crit' },
-  { name: 'team-checkout',        band: 'crit' },
+  { name: 'Team Checkout',        band: 'crit' },
   { name: 'Platform Engineering', band: 'warn' },
   { name: 'Consumer Apps',        band: 'warn' },
   { name: 'Restaurant Apps',      band: 'safe' },
@@ -273,14 +273,9 @@ function replayRev() {
 .demo-bar .replay:hover { background: var(--interactive-brand-hover); }
 .demo-bar .hint { margin-left: auto; font-style: italic; opacity: 0.7; font-size: 11.5px; }
 
-/* ─── Mock surface ─── */
-.mock {
-  border-radius: 18px; overflow: hidden;
-  border: 1px solid var(--border-default);
-  background: linear-gradient(180deg, var(--surface-subtle) 0%, var(--surface-default) 100%);
-  box-shadow: var(--shadow-high);
-}
-.surface { padding: var(--space-9) var(--space-9) var(--space-12); }
+/* ─── Surface ─── */
+.mock { /* outer box removed */ }
+.surface { padding: var(--space-4) 0 var(--space-12); }
 
 /* ─── Header ─── */
 .head {
@@ -300,7 +295,7 @@ function replayRev() {
 }
 
 .team-select {
-  font-size: 22px;
+  font-size: 30px;
   font-weight: var(--fw-extra-bold);
   font-family: inherit;
   color: var(--content-default);
@@ -309,7 +304,7 @@ function replayRev() {
   border-bottom: 1.5px solid var(--border-default);
   padding: 0 4px 2px 0;
   cursor: pointer;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.5px;
   outline: none;
   appearance: auto;
   -webkit-appearance: auto;
@@ -318,10 +313,10 @@ function replayRev() {
 .team-select:focus { border-bottom-color: var(--interactive-brand); }
 
 .title-suffix {
-  font-size: 22px;
+  font-size: 30px;
   font-weight: var(--fw-extra-bold);
   color: var(--content-subtle);
-  letter-spacing: -0.2px;
+  letter-spacing: -0.5px;
 }
 
 .meta-row {
@@ -415,10 +410,10 @@ function replayRev() {
 
 .breakdown-head h3 {
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: 20px;
   font-weight: var(--fw-extra-bold);
   color: var(--content-default);
-  letter-spacing: 0.1px;
+  letter-spacing: -0.2px;
 }
 
 .breakdown-sub {
