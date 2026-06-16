@@ -153,7 +153,7 @@ function replayRev() {
 
           <!-- Right: bar chart -->
           <div class="chart-col">
-            <TrendBars :data="team.trendData!" />
+            <TrendBars :data="team.trendData!" :peer-average="team.comparison!.orgAverage" />
           </div>
         </div>
 
@@ -364,7 +364,7 @@ function replayRev() {
 .ring-wrap { flex-shrink: 0; }
 
 .delta-stats {
-  flex: 1;
+  margin-top: auto;
   display: flex;
   gap: var(--space-4);
   width: 100%;

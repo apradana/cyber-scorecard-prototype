@@ -249,7 +249,7 @@ watch(() => props.score, (next) => {
   color: var(--content-disabled);
   text-transform: uppercase;
   font-weight: var(--fw-bold);
-  margin-bottom: 6px;
+  margin-bottom: 0;
 }
 .score-num {
   font-size: 80px;
@@ -261,12 +261,13 @@ watch(() => props.score, (next) => {
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
   font-variant-numeric: tabular-nums;
   transition: color var(--t-fast) var(--ease-out);
+  margin-top: 6px;
 }
 .score-num.safe { color: var(--rag-safe); }
 .score-num.warn { color: var(--rag-warn); }
 .score-num.crit { color: var(--rag-crit); }
 .descriptor {
-  margin-top: 10px;
+  margin-top: 6px;
   font-size: 11px;
   letter-spacing: 2px;
   font-weight: var(--fw-extra-bold);
