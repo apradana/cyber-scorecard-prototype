@@ -215,7 +215,6 @@ watch(() => props.score, (next) => {
     </svg>
 
     <div class="center">
-      <div class="lbl">{{ label }}</div>
       <div :class="['score-num', band]">{{ Math.round(displayScore) }}</div>
       <div :class="descriptorClass">{{ descriptorText }}</div>
     </div>
@@ -241,15 +240,7 @@ watch(() => props.score, (next) => {
   justify-content: center;
   pointer-events: none;
   text-align: center;
-  transform: translateY(6px);
-}
-.lbl {
-  font-size: 10px;
-  letter-spacing: 2.5px;
-  color: var(--content-disabled);
-  text-transform: uppercase;
-  font-weight: var(--fw-bold);
-  margin-bottom: 0;
+  transform: translateY(8px);
 }
 .score-num {
   font-size: 80px;
@@ -261,7 +252,6 @@ watch(() => props.score, (next) => {
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
   font-variant-numeric: tabular-nums;
   transition: color var(--t-fast) var(--ease-out);
-  margin-top: 6px;
 }
 .score-num.safe { color: var(--rag-safe); }
 .score-num.warn { color: var(--rag-warn); }

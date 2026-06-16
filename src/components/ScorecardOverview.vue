@@ -153,7 +153,7 @@ function replayRev() {
 
           <!-- Right: bar chart -->
           <div class="chart-col">
-            <TrendBars :data="team.trendData!" :peer-average="team.comparison!.orgAverage" />
+            <TrendBars :data="team.trendData!" />
           </div>
         </div>
 
@@ -359,6 +359,10 @@ function replayRev() {
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  /* padding-top matches bars-head margin-top so dial + heading push down together;
+     padding-bottom lifts delta-stats bottom to align with chart x-axis date labels */
+  padding-top: 10px;
+  padding-bottom: 30px;
 }
 
 .ring-wrap { flex-shrink: 0; }

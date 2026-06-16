@@ -5,24 +5,13 @@ import { bandFor } from '../data/mockData'
 
 const props = defineProps<{
   data: TrendData
-  peerAverage?: number
 }>()
-
-const PEER_AVG = computed(() => props.peerAverage ?? 64)
 
 const PERIODS: TrendPeriod[] = ['30d', '90d', '12m']
 const PERIOD_DAYS: Record<TrendPeriod, number> = { '7d': 7, '30d': 30, '90d': 90, '12m': 365 }
 
 const period = ref<TrendPeriod>('30d')
 const scores = computed(() => props.data[period.value])
-
-// Peer average: flat baseline with minor sinusoidal noise
-const peerScores = computed(() =>
-  scores.value.map((_, i) => {
-    const noise = Math.round(Math.sin(i * 0.9 + 0.5) * 2 + Math.cos(i * 0.4) * 1)
-    return Math.max(10, Math.min(90, PEER_AVG.value + noise))
-  })
-)
 
 // ─── SVG canvas ────────────────────────────────────────────────────
 const W = 520
@@ -42,14 +31,10 @@ function scoreToY(s: number): number {
 const REF_40_Y = computed(() => scoreToY(40))
 const REF_70_Y = computed(() => scoreToY(70))
 
-// ─── Grouped bar geometry ──────────────────────────────────────────
+// ─── Bar geometry — gap = 1/4 of slot (barW = 75%) ─────────────────
 const n = computed(() => scores.value.length)
 const slotW = computed(() => CW / n.value)
-
-// Each slot: 10% outer pad each side, 6% inner gap between the pair
-const outerPad  = computed(() => slotW.value * 0.10)
-const innerGap  = computed(() => slotW.value * 0.06)
-const barW      = computed(() => (slotW.value - 2 * outerPad.value - innerGap.value) / 2)
+const barW = computed(() => slotW.value * 0.75)
 
 interface Bar {
   x: number; y: number; h: number
@@ -59,7 +44,7 @@ interface Bar {
 
 // Top-rounded-only bar path
 function barPath(bx: number, by: number, bw: number, bh: number): string {
-  const r = Math.min(2, bh / 2, bw / 3)
+  const r = Math.min(3, bh / 2, bw / 3)
   if (r < 0.5) return `M ${bx},${by + bh} L ${bx},${by} L ${bx + bw},${by} L ${bx + bw},${by + bh} Z`
   return [
     `M ${bx},${by + bh}`,
@@ -72,31 +57,27 @@ function barPath(bx: number, by: number, bw: number, bh: number): string {
   ].join(' ')
 }
 
-const teamBars = computed<Bar[]>(() =>
+const bars = computed<Bar[]>(() =>
   scores.value.map((score, i) => {
     const isLatest = i === scores.value.length - 1
     const b = bandFor(score)
     const color = b === 'safe' ? 'var(--rag-safe)' : b === 'warn' ? 'var(--rag-warn)' : 'var(--rag-crit)'
     const h = Math.max(2, (score / 100) * CH)
-    const x = PAD_L + i * slotW.value + outerPad.value
-    return { x, y: PAD_T + CH - h, h, score, isLatest, color, opacity: isLatest ? 1 : 0.72 }
+    return {
+      x: PAD_L + i * slotW.value + (slotW.value - barW.value) / 2,
+      y: PAD_T + CH - h,
+      h, score, isLatest, color,
+      opacity: isLatest ? 1 : 0.65,
+    }
   })
 )
 
-const peerBars = computed<Bar[]>(() =>
-  peerScores.value.map((score, i) => {
-    const h = Math.max(2, (score / 100) * CH)
-    const x = PAD_L + i * slotW.value + outerPad.value + barW.value + innerGap.value
-    return { x, y: PAD_T + CH - h, h, score, isLatest: i === peerScores.value.length - 1, color: 'rgba(255,255,255,0.18)', opacity: 1 }
-  })
-)
+const latest = computed(() => bars.value[bars.value.length - 1])
 
-const latestTeam = computed(() => teamBars.value[teamBars.value.length - 1])
-
-// Gridlines at 0, 25, 50, 75, 100
+// ─── Gridlines ─────────────────────────────────────────────────────
 const gridLines = [0, 25, 50, 75, 100].map(s => ({ score: s, y: scoreToY(s) }))
 
-// Y-axis labels at band boundaries + extremes
+// ─── Y-axis labels ─────────────────────────────────────────────────
 const yLabels = [
   { score: 0,   label: '0' },
   { score: 40,  label: '40' },
@@ -104,7 +85,7 @@ const yLabels = [
   { score: 100, label: '100' },
 ]
 
-// ─── Date-based x-axis ticks ─────────────────────────────────────────
+// ─── Date-based x-axis ticks ───────────────────────────────────────
 interface DateTick { x: number; label: string }
 
 const dateTicks = computed<DateTick[]>(() => {
@@ -145,10 +126,6 @@ const dateTicks = computed<DateTick[]>(() => {
   <div class="bars-wrap">
     <div class="bars-head">
       <span class="bars-label">Score over time</span>
-      <div class="bars-legend">
-        <span class="legend-item"><span class="legend-dot team" />Your team</span>
-        <span class="legend-item"><span class="legend-dot peer" />P&amp;T average</span>
-      </div>
       <div class="period-toggle" role="group" aria-label="Chart period">
         <button
           v-for="p in PERIODS"
@@ -177,9 +154,9 @@ const dateTicks = computed<DateTick[]>(() => {
 
       <!-- Band threshold lines at 40 and 70 -->
       <line :x1="PAD_L" :y1="REF_40_Y" :x2="W - PAD_R" :y2="REF_40_Y"
-            stroke="var(--rag-safe)" stroke-width="1" stroke-dasharray="3 4" opacity="0.35" />
+            stroke="var(--rag-safe)" stroke-width="1" stroke-dasharray="3 4" opacity="0.4" />
       <line :x1="PAD_L" :y1="REF_70_Y" :x2="W - PAD_R" :y2="REF_70_Y"
-            stroke="var(--rag-crit)" stroke-width="1" stroke-dasharray="3 4" opacity="0.35" />
+            stroke="var(--rag-crit)" stroke-width="1" stroke-dasharray="3 4" opacity="0.4" />
 
       <!-- Y-axis labels -->
       <text
@@ -191,17 +168,8 @@ const dateTicks = computed<DateTick[]>(() => {
         text-anchor="end"
       >{{ yl.label }}</text>
 
-      <!-- Peer bars (drawn first, behind team bars) -->
-      <path
-        v-for="(bar, i) in peerBars"
-        :key="'p' + i"
-        :d="barPath(bar.x, bar.y, barW, bar.h)"
-        :fill="bar.color"
-        :opacity="bar.opacity"
-      />
-
-      <!-- Team bars -->
-      <g v-for="(bar, i) in teamBars" :key="'t' + i">
+      <!-- Bars -->
+      <g v-for="(bar, i) in bars" :key="i">
         <path
           :d="barPath(bar.x, bar.y, barW, bar.h)"
           :fill="bar.color"
@@ -216,20 +184,20 @@ const dateTicks = computed<DateTick[]>(() => {
         />
       </g>
 
-      <!-- Latest team score callout bubble -->
-      <g v-if="latestTeam">
+      <!-- Latest bar score callout -->
+      <g v-if="latest">
         <rect
-          :x="latestTeam.x + barW / 2 - 18"
-          :y="latestTeam.y - 24"
-          width="36" height="18" rx="4"
-          :fill="latestTeam.color" opacity="0.9"
+          :x="latest.x + barW / 2 - 20"
+          :y="latest.y - 24"
+          width="40" height="18" rx="4"
+          :fill="latest.color" opacity="0.92"
         />
         <text
-          :x="latestTeam.x + barW / 2"
-          :y="latestTeam.y - 11"
+          :x="latest.x + barW / 2"
+          :y="latest.y - 11"
           class="callout-text"
           text-anchor="middle"
-        >{{ latestTeam.score }}</text>
+        >{{ latest.score }}</text>
       </g>
 
       <!-- Date ticks on x-axis -->
@@ -261,7 +229,7 @@ const dateTicks = computed<DateTick[]>(() => {
 .bars-head {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  justify-content: space-between;
   margin-bottom: 4px;
   margin-top: 10px;
   padding-left: calc(34 / 520 * 100%);
@@ -269,38 +237,11 @@ const dateTicks = computed<DateTick[]>(() => {
 }
 
 .bars-label {
-  font-size: 13.5px;
+  font-size: 16px;
   color: var(--content-subtle);
   font-weight: var(--fw-extra-bold);
   letter-spacing: 0.1px;
 }
-
-.bars-legend {
-  display: flex;
-  gap: var(--space-3);
-  align-items: center;
-  margin-right: auto;
-  margin-left: var(--space-3);
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  color: var(--content-disabled);
-  font-weight: var(--fw-bold);
-}
-
-.legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  display: inline-block;
-  flex-shrink: 0;
-}
-.legend-dot.team { background: var(--rag-safe); }  /* updated per active band via team bar color */
-.legend-dot.peer { background: rgba(255,255,255,0.3); }
 
 .period-toggle {
   display: flex;
