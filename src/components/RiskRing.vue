@@ -241,20 +241,20 @@ watch(() => props.score, (next) => {
   justify-content: center;
   pointer-events: none;
   text-align: center;
-  transform: translateY(8px);
+  transform: translateY(6px);
 }
 .lbl {
-  font-size: var(--text-xs);
-  letter-spacing: 3px;
-  color: var(--content-subtle);
+  font-size: 10px;
+  letter-spacing: 2.5px;
+  color: var(--content-disabled);
   text-transform: uppercase;
   font-weight: var(--fw-bold);
-  margin-bottom: var(--space-1);
+  margin-bottom: 2px;
 }
 .score-num {
-  font-size: 120px;
+  font-size: 86px;
   line-height: 0.9;
-  letter-spacing: -4px;
+  letter-spacing: -3px;
   color: var(--content-default);
   font-weight: var(--fw-black);
   font-family: var(--font-sans);
@@ -266,9 +266,9 @@ watch(() => props.score, (next) => {
 .score-num.warn { color: var(--rag-warn); }
 .score-num.crit { color: var(--rag-crit); }
 .descriptor {
-  margin-top: var(--space-2);
-  font-size: 13px;
-  letter-spacing: 2.4px;
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 2px;
   font-weight: var(--fw-extra-bold);
   text-transform: uppercase;
 }

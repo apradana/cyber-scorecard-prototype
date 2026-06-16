@@ -2,14 +2,31 @@
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { bandFor, defaultTeam, teamStates, type Band, product } from '../data/mockData'
 import RiskRing from './RiskRing.vue'
-import PageChrome from './PageChrome.vue'
 import IndexTile from './IndexTile.vue'
 import DrillDrawer from './DrillDrawer.vue'
 import TrendBars from './TrendBars.vue'
 
-// ─── Demo controls ──────────────────────────────────────────────────
+// ─── Teams (demo) ────────────────────────────────────────────────────
+const TEAMS: { name: string; band: Band }[] = [
+  { name: 'Workplace Technology', band: 'crit' },
+  { name: 'team-checkout',        band: 'crit' },
+  { name: 'Platform Engineering', band: 'warn' },
+  { name: 'Consumer Apps',        band: 'warn' },
+  { name: 'Restaurant Apps',      band: 'safe' },
+]
+
+const selectedTeamIndex = ref(0)
 const selectedBand = ref<Band>('crit')
 const selectedIndexCode = ref<string | null>(null)
+
+const teamName = computed(() => TEAMS[selectedTeamIndex.value].name)
+
+function onTeamChange() {
+  selectedBand.value = TEAMS[selectedTeamIndex.value].band
+  selectedIndexCode.value = null
+  animateTiles()
+  ringRef.value?.replay()
+}
 
 const team = computed(() => ({
   ...defaultTeam,
@@ -26,8 +43,7 @@ function animateTiles(duration = 1200) {
   if (tileRafId) cancelAnimationFrame(tileRafId)
   tileProgress.value = 0
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    tileProgress.value = 1
-    return
+    tileProgress.value = 1; return
   }
   const t0 = performance.now()
   function tick(now: number) {
@@ -77,27 +93,36 @@ function replayRev() {
 
     <!-- Product surface -->
     <section class="mock" :aria-label="`${product.name} inside ${product.host}`">
-      <PageChrome :team="team.name" />
-
       <div class="surface">
+
+        <!-- Header with team dropdown title -->
         <header class="head">
-          <div class="left">
-            <h2>{{ product.name }}</h2>
-            <span class="meta">· {{ product.refreshCadence }} refresh · last updated {{ product.lastUpdated }}</span>
+          <div class="title-row">
+            <select
+              v-model="selectedTeamIndex"
+              class="team-select"
+              @change="onTeamChange"
+              :aria-label="'Select team'"
+            >
+              <option v-for="(t, i) in TEAMS" :key="t.name" :value="i">{{ t.name }}</option>
+            </select>
+            <span class="title-suffix">Cyber Scorecard</span>
           </div>
-          <span class="team-pill">Viewing <strong>{{ team.name }}</strong></span>
+          <span class="meta">· {{ product.refreshCadence }} refresh · last updated {{ product.lastUpdated }}</span>
         </header>
 
         <!-- Hero: ring left, trend chart right -->
         <div class="hero">
           <!-- Left: score dial + delta stats -->
           <div class="ring-col">
-            <RiskRing
-              ref="ringRef"
-              :score="team.overallScore!"
-              :band="team.band!"
-              :size="300"
-            />
+            <div class="ring-wrap">
+              <RiskRing
+                ref="ringRef"
+                :score="team.overallScore!"
+                :band="team.band!"
+                :size="260"
+              />
+            </div>
 
             <div class="delta-stats">
               <div class="stat">
@@ -128,7 +153,12 @@ function replayRev() {
           </div>
         </div>
 
-        <!-- Index tiles -->
+        <!-- Score breakdown -->
+        <div class="breakdown-head">
+          <h3>Score breakdown</h3>
+          <span class="breakdown-sub">Your overall score is a weighted average of the following indices</span>
+        </div>
+
         <div class="indices">
           <IndexTile
             v-for="card in team.indices"
@@ -194,6 +224,7 @@ function replayRev() {
           }"
           @close="closeDrawer"
         />
+
       </div>
     </section>
 
@@ -210,185 +241,195 @@ function replayRev() {
   padding: var(--space-6) var(--space-6) var(--space-12);
 }
 
-/* ─── Reviewer demo bar ─── */
+/* ─── Demo bar ─── */
 .demo-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
+  display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
   background: var(--surface-subtle);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: 10px 14px;
-  font-size: 12.5px;
-  color: var(--content-subtle);
+  font-size: 12.5px; color: var(--content-subtle);
   margin-bottom: var(--space-4);
 }
 .demo-bar strong { color: var(--content-default); font-weight: var(--fw-extra-bold); }
 .demo-bar .sep { width: 1px; height: 18px; background: var(--border-default); }
-.demo-bar label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: var(--fw-bold);
-  cursor: pointer;
-}
+.demo-bar label { display: inline-flex; align-items: center; gap: 6px; font-weight: var(--fw-bold); cursor: pointer; }
 .demo-bar select {
-  background: var(--surface-raised);
-  color: var(--content-default);
+  background: var(--surface-raised); color: var(--content-default);
   border: 1px solid var(--border-default);
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: var(--fw-bold);
+  padding: 4px 8px; border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 12.5px; font-weight: var(--fw-bold);
 }
 .demo-bar .replay {
-  border: none;
-  padding: 6px 14px;
-  border-radius: var(--radius-md);
-  font-weight: var(--fw-bold);
-  font-size: var(--text-xs);
-  cursor: pointer;
-  background: var(--interactive-brand);
-  color: var(--interactive-brand-content);
+  border: none; padding: 6px 14px; border-radius: var(--radius-md);
+  font-weight: var(--fw-bold); font-size: var(--text-xs); cursor: pointer;
+  background: var(--interactive-brand); color: var(--interactive-brand-content);
   transition: background var(--t-fast) var(--ease-out);
 }
 .demo-bar .replay:hover { background: var(--interactive-brand-hover); }
 .demo-bar .hint { margin-left: auto; font-style: italic; opacity: 0.7; font-size: 11.5px; }
 
-/* ─── Product mock surface ─── */
+/* ─── Mock surface ─── */
 .mock {
-  border-radius: 18px;
-  overflow: hidden;
+  border-radius: 18px; overflow: hidden;
   border: 1px solid var(--border-default);
   background: linear-gradient(180deg, var(--surface-subtle) 0%, var(--surface-default) 100%);
   box-shadow: var(--shadow-high);
 }
-
 .surface { padding: var(--space-8) var(--space-8) var(--space-10); }
 
+/* ─── Header ─── */
 .head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: var(--space-5);
 }
-.head .left { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
-.head h2 {
-  margin: 0;
+
+.title-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.team-select {
   font-size: var(--text-md);
-  color: var(--content-default);
   font-weight: var(--fw-extra-bold);
+  font-family: inherit;
+  color: var(--content-default);
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--border-default);
+  padding: 0 4px 2px 0;
+  cursor: pointer;
+  letter-spacing: 0.1px;
+  outline: none;
+  /* style the dropdown arrow */
+  appearance: auto;
+  -webkit-appearance: auto;
+}
+.team-select:hover { border-bottom-color: var(--border-strong); }
+.team-select:focus { border-bottom-color: var(--interactive-brand); }
+
+.title-suffix {
+  font-size: var(--text-md);
+  font-weight: var(--fw-extra-bold);
+  color: var(--content-subtle);
   letter-spacing: 0.1px;
 }
-.head .meta { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--content-disabled); }
-.team-pill {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--border-default);
-  padding: 6px 14px;
-  border-radius: var(--radius-pill);
-  font-size: 12.5px;
-  color: var(--content-subtle);
-  font-weight: var(--fw-bold);
+
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--content-disabled);
+  margin-top: 4px;
+  display: block;
 }
-.team-pill strong { color: var(--content-default); font-weight: var(--fw-extra-bold); }
 
 /* ─── Hero ─── */
 .hero {
   background: linear-gradient(170deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
-  padding: var(--space-8);
-  margin-bottom: var(--space-5);
+  padding: var(--space-6) var(--space-7);
+  margin-bottom: var(--space-6);
   display: grid;
-  grid-template-columns: 300px 1fr;
-  gap: var(--space-8);
+  grid-template-columns: 280px 1fr;
+  gap: var(--space-7);
   align-items: stretch;
 }
 
-/* ─── Left column: ring + delta stats ─── */
+/* Left column */
 .ring-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
 
+.ring-wrap { flex-shrink: 0; }
+
 .delta-stats {
+  flex: 1;
   display: flex;
-  gap: var(--space-6);
+  gap: var(--space-4);
   width: 100%;
-  padding: var(--space-4) var(--space-2);
+  padding: var(--space-4) var(--space-3);
   background: rgba(0,0,0,0.18);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
+  align-items: flex-start;
 }
 
 .stat { flex: 1; }
 
 .stat-lbl {
-  font-size: 10.5px;
+  font-size: 10px;
   color: var(--content-disabled);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: var(--fw-bold);
-  margin-bottom: var(--space-1);
+  text-transform: uppercase; letter-spacing: 1px;
+  font-weight: var(--fw-bold); margin-bottom: var(--space-1);
 }
-
 .stat-val {
-  font-size: var(--text-md);
-  color: var(--content-default);
-  font-weight: var(--fw-extra-bold);
-  font-family: var(--font-sans);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
+  font-size: var(--text-md); color: var(--content-default);
+  font-weight: var(--fw-extra-bold); font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums; line-height: 1.2;
 }
 .stat-val.crit { color: var(--rag-crit); }
 .stat-val.warn { color: var(--rag-warn); }
 .stat-val.safe { color: var(--rag-safe); }
 .stat-sub { font-size: 11px; color: var(--content-disabled); margin-top: 3px; }
 
-/* ─── Right column: bar chart ─── */
+/* Right column */
 .chart-col {
   display: flex;
   flex-direction: column;
-  min-height: 280px;
+}
+
+/* ─── Score breakdown ─── */
+.breakdown-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.breakdown-head h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-extra-bold);
+  color: var(--content-default);
+  letter-spacing: 0.1px;
+}
+
+.breakdown-sub {
+  font-size: 12px;
+  color: var(--content-disabled);
 }
 
 /* ─── Index tiles ─── */
 .indices {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-7);
 }
 
 /* ─── Footnote ─── */
 .footnote {
-  font-size: 11.5px;
-  color: var(--content-disabled);
-  text-align: center;
-  margin-top: var(--space-6);
-  line-height: 1.55;
+  font-size: 11.5px; color: var(--content-disabled);
+  text-align: center; margin-top: var(--space-6); line-height: 1.55;
 }
 .footnote strong { color: var(--content-subtle); font-weight: var(--fw-bold); }
 
 /* ─── Responsive ─── */
 @media (max-width: 960px) {
-  .hero {
-    grid-template-columns: 1fr;
-    gap: var(--space-5);
-    padding: var(--space-5);
-  }
+  .hero { grid-template-columns: 1fr; gap: var(--space-5); padding: var(--space-5); }
   .ring-col { flex-direction: row; flex-wrap: wrap; justify-content: center; }
-  .delta-stats { flex: 1; min-width: 200px; }
-  .indices { grid-template-columns: 1fr 1fr; }
+  .delta-stats { flex: 1; min-width: 220px; }
+  .indices { grid-template-columns: 1fr 1fr; gap: var(--space-5); }
   .surface { padding: var(--space-5); }
 }
 
 @media (max-width: 640px) {
   .page { padding: var(--space-3); }
-  .head { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
   .delta-stats { flex-direction: column; gap: var(--space-3); }
   .indices { grid-template-columns: 1fr; }
   .ring-col { flex-direction: column; }

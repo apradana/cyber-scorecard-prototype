@@ -7,80 +7,104 @@ const props = defineProps<{
   data: TrendData
 }>()
 
-const PERIODS: TrendPeriod[] = ['7d', '30d', '90d', '12m']
-const PERIOD_LABELS: Record<TrendPeriod, string> = {
-  '7d': '7 days', '30d': '30 days', '90d': '90 days', '12m': '12 months',
-}
+const PERIODS: TrendPeriod[] = ['30d', '90d', '12m']
+const PERIOD_DAYS: Record<TrendPeriod, number> = { '7d': 7, '30d': 30, '90d': 90, '12m': 365 }
 
 const period = ref<TrendPeriod>('30d')
 const scores = computed(() => props.data[period.value])
 
-// SVG canvas
+// ─── SVG canvas ────────────────────────────────────────────────────
 const W = 520
-const H = 200
-const PAD_L = 32   // room for y-axis labels
-const PAD_R = 8
-const PAD_T = 16
-const PAD_B = 20   // room for x-axis hint
+const H = 220
+const PAD_L = 34
+const PAD_R = 10
+const PAD_T = 20
+const PAD_B = 32   // room for date labels
 
-const CW = W - PAD_L - PAD_R   // chart width
-const CH = H - PAD_T - PAD_B   // chart height
+const CW = W - PAD_L - PAD_R
+const CH = H - PAD_T - PAD_B
 
-// Band thresholds as Y coordinates (score 0 = bottom, 100 = top)
-function scoreToY(score: number): number {
-  return PAD_T + CH - (score / 100) * CH
+// ─── Helpers ───────────────────────────────────────────────────────
+function scoreToY(s: number): number {
+  return PAD_T + CH - (s / 100) * CH
 }
 
 const REF_40_Y = computed(() => scoreToY(40))
 const REF_70_Y = computed(() => scoreToY(70))
 
-// Bar geometry
+// ─── Bar geometry — skinny with wide gaps ──────────────────────────
 const n = computed(() => scores.value.length)
-const totalGap = computed(() => n.value > 20 ? n.value * 1.5 : n.value > 10 ? n.value * 2.5 : n.value * 4)
-const barW = computed(() => Math.max(2, (CW - totalGap.value) / n.value))
-const gap = computed(() => n.value > 1 ? (CW - barW.value * n.value) / (n.value - 1) : 0)
+const slotW = computed(() => CW / n.value)
+const barW = computed(() => slotW.value * 0.45)   // bar takes 45% of slot, gap 55%
 
 interface Bar {
-  x: number
-  y: number
-  h: number
-  score: number
-  isLatest: boolean
-  color: string
-  opacity: number
+  x: number; y: number; h: number
+  score: number; isLatest: boolean
+  color: string; opacity: number
 }
 
-const bars = computed<Bar[]>(() => {
-  return scores.value.map((score, i) => {
+const bars = computed<Bar[]>(() =>
+  scores.value.map((score, i) => {
     const isLatest = i === scores.value.length - 1
     const b = bandFor(score)
     const color = b === 'safe' ? 'var(--rag-safe)' : b === 'warn' ? 'var(--rag-warn)' : 'var(--rag-crit)'
-    const h = (score / 100) * CH
+    const h = Math.max(2, (score / 100) * CH)
     return {
-      x: PAD_L + i * (barW.value + gap.value),
+      x: PAD_L + i * slotW.value + (slotW.value - barW.value) / 2,
       y: PAD_T + CH - h,
-      h,
-      score,
-      isLatest,
-      color,
-      opacity: isLatest ? 1 : 0.65,
+      h, score, isLatest, color,
+      opacity: isLatest ? 1 : 0.6,
     }
   })
-})
+)
 
-// Latest bar for tooltip
 const latest = computed(() => bars.value[bars.value.length - 1])
 
-// Y-axis labels
+// ─── Date-based x-axis ticks every ~7 days ─────────────────────────
+interface DateTick { x: number; label: string }
+
+const dateTicks = computed<DateTick[]>(() => {
+  const numBars = n.value
+  const totalDays = PERIOD_DAYS[period.value]
+  const daysPerBar = totalDays / numBars
+
+  // Tick interval in bars: every 7 days, but at least every 2, at most every 4
+  let barsPerTick: number
+  if (period.value === '12m') {
+    barsPerTick = Math.max(1, Math.round(numBars / 4))   // ~quarterly
+  } else {
+    barsPerTick = Math.max(2, Math.round(7 / daysPerBar)) // every 7 days
+  }
+
+  const today = new Date()
+  const ticks: DateTick[] = []
+
+  for (let i = 0; i < numBars; i += barsPerTick) {
+    const daysBack = Math.round((numBars - 1 - i) * daysPerBar)
+    const d = new Date(today)
+    d.setDate(today.getDate() - daysBack)
+
+    let label: string
+    if (period.value === '12m') {
+      label = d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })
+    } else {
+      label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+    }
+    // x center of bar i
+    const x = PAD_L + i * slotW.value + slotW.value / 2
+    ticks.push({ x, label })
+  }
+
+  return ticks
+})
+
+// ─── Y-axis labels ─────────────────────────────────────────────────
 const yLabels = [
   { score: 0,   label: '0' },
   { score: 40,  label: '40' },
   { score: 70,  label: '70' },
   { score: 100, label: '100' },
 ]
-
-// X-axis: show first and last date labels as "Day 1" and "Today" for the prototype
-const xStart = computed(() => period.value === '7d' ? '7d ago' : period.value === '30d' ? '30d ago' : period.value === '90d' ? '90d ago' : '12m ago')
 </script>
 
 <template>
@@ -100,106 +124,64 @@ const xStart = computed(() => period.value === '7d' ? '7d ago' : period.value ==
     <svg
       :viewBox="`0 0 ${W} ${H}`"
       class="bars-svg"
-      aria-label="`Score trend over ${PERIOD_LABELS[period]}`"
-      preserveAspectRatio="none"
+      :aria-label="`Score trend over last ${period}`"
     >
       <!-- Band zone fills -->
-      <rect
-        :x="PAD_L" :y="PAD_T"
-        :width="CW" :height="REF_70_Y - PAD_T"
-        fill="var(--rag-crit)" opacity="0.04"
-      />
-      <rect
-        :x="PAD_L" :y="REF_70_Y"
-        :width="CW" :height="REF_40_Y - REF_70_Y"
-        fill="var(--rag-warn)" opacity="0.04"
-      />
-      <rect
-        :x="PAD_L" :y="REF_40_Y"
-        :width="CW" :height="PAD_T + CH - REF_40_Y"
-        fill="var(--rag-safe)" opacity="0.04"
-      />
+      <rect :x="PAD_L" :y="PAD_T" :width="CW" :height="REF_70_Y - PAD_T"
+            fill="var(--rag-crit)" opacity="0.04" />
+      <rect :x="PAD_L" :y="REF_70_Y" :width="CW" :height="REF_40_Y - REF_70_Y"
+            fill="var(--rag-warn)" opacity="0.04" />
+      <rect :x="PAD_L" :y="REF_40_Y" :width="CW" :height="PAD_T + CH - REF_40_Y"
+            fill="var(--rag-safe)" opacity="0.04" />
 
-      <!-- Reference lines at 40 and 70 -->
-      <line
-        :x1="PAD_L" :y1="REF_40_Y"
-        :x2="W - PAD_R" :y2="REF_40_Y"
-        stroke="var(--rag-safe)" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"
-      />
-      <line
-        :x1="PAD_L" :y1="REF_70_Y"
-        :x2="W - PAD_R" :y2="REF_70_Y"
-        stroke="var(--rag-crit)" stroke-width="1" stroke-dasharray="3 4" opacity="0.5"
-      />
+      <!-- Threshold lines at 40 and 70 -->
+      <line :x1="PAD_L" :y1="REF_40_Y" :x2="W - PAD_R" :y2="REF_40_Y"
+            stroke="var(--rag-safe)" stroke-width="1" stroke-dasharray="3 4" opacity="0.45" />
+      <line :x1="PAD_L" :y1="REF_70_Y" :x2="W - PAD_R" :y2="REF_70_Y"
+            stroke="var(--rag-crit)" stroke-width="1" stroke-dasharray="3 4" opacity="0.45" />
 
       <!-- Y-axis labels -->
-      <text
-        v-for="label in yLabels"
-        :key="label.score"
-        :x="PAD_L - 5"
-        :y="scoreToY(label.score) + 4"
-        class="axis-label"
-        text-anchor="end"
-      >{{ label.label }}</text>
+      <text v-for="yl in yLabels" :key="yl.score"
+            :x="PAD_L - 5" :y="scoreToY(yl.score) + 4"
+            class="axis-label" text-anchor="end">{{ yl.label }}</text>
 
       <!-- Bars -->
       <g v-for="(bar, i) in bars" :key="i">
         <rect
-          :x="bar.x"
-          :y="bar.y"
-          :width="barW"
-          :height="bar.h"
-          :fill="bar.color"
-          :opacity="bar.opacity"
+          :x="bar.x" :y="bar.y"
+          :width="barW" :height="bar.h"
+          :fill="bar.color" :opacity="bar.opacity"
           rx="2"
         />
-        <!-- Latest bar: white top edge highlight -->
-        <rect
-          v-if="bar.isLatest"
-          :x="bar.x"
-          :y="bar.y"
-          :width="barW"
-          height="2"
-          fill="white"
-          opacity="0.7"
-          rx="1"
+        <rect v-if="bar.isLatest"
+          :x="bar.x" :y="bar.y"
+          :width="barW" height="2"
+          fill="white" opacity="0.7" rx="1"
         />
       </g>
 
-      <!-- Latest score callout -->
+      <!-- Latest bar callout -->
       <g v-if="latest">
         <rect
-          :x="latest.x + barW / 2 - 22"
-          :y="latest.y - 26"
-          width="44"
-          height="20"
-          rx="4"
-          :fill="latest.color"
-          opacity="0.9"
+          :x="latest.x + barW / 2 - 20"
+          :y="latest.y - 24"
+          width="40" height="18" rx="4"
+          :fill="latest.color" opacity="0.92"
         />
         <text
           :x="latest.x + barW / 2"
-          :y="latest.y - 12"
-          class="callout-text"
-          text-anchor="middle"
+          :y="latest.y - 11"
+          class="callout-text" text-anchor="middle"
         >{{ latest.score }}</text>
       </g>
 
-      <!-- X-axis: start and end labels -->
-      <text
-        :x="PAD_L"
-        :y="H - 4"
-        class="axis-label"
-        text-anchor="start"
-        opacity="0.5"
-      >{{ xStart }}</text>
-      <text
-        :x="W - PAD_R"
-        :y="H - 4"
-        class="axis-label"
-        text-anchor="end"
-        opacity="0.8"
-      >today</text>
+      <!-- Date ticks on x-axis -->
+      <g v-for="(tick, i) in dateTicks" :key="i">
+        <line :x1="tick.x" :y1="PAD_T + CH" :x2="tick.x" :y2="PAD_T + CH + 4"
+              stroke="var(--content-disabled)" stroke-width="1" opacity="0.4" />
+        <text :x="tick.x" :y="H - 4"
+              class="axis-label" text-anchor="middle">{{ tick.label }}</text>
+      </g>
     </svg>
   </div>
 </template>
@@ -220,11 +202,10 @@ const xStart = computed(() => period.value === '7d' ? '7d ago' : period.value ==
 }
 
 .bars-label {
-  font-size: 11px;
-  color: var(--content-disabled);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: var(--fw-bold);
+  font-size: var(--text-sm);
+  color: var(--content-subtle);
+  font-weight: var(--fw-extra-bold);
+  letter-spacing: 0.2px;
 }
 
 .period-toggle {
@@ -242,7 +223,7 @@ const xStart = computed(() => period.value === '7d' ? '7d ago' : period.value ==
   color: var(--content-disabled);
   background: transparent;
   border: none;
-  padding: 4px 11px;
+  padding: 4px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition:
@@ -258,19 +239,18 @@ const xStart = computed(() => period.value === '7d' ? '7d ago' : period.value ==
 .bars-svg {
   flex: 1;
   width: 100%;
-  min-height: 160px;
+  min-height: 140px;
   display: block;
-  overflow: visible;
 }
 
 .axis-label {
-  font-size: 9.5px;
+  font-size: 9px;
   fill: var(--content-disabled);
   font-family: var(--font-mono);
 }
 
 .callout-text {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   fill: white;
   font-family: var(--font-sans);
